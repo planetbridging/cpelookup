@@ -11,6 +11,8 @@ import (
   "encoding/json"
    "reflect"
 	"pack/downloadmanager"
+	"strings"
+	"time"
 )
 
 
@@ -18,7 +20,6 @@ import (
 /*-------------------------------------------------------------------
 structs
 --------------------------------------------------------------------*/
-//kali_exploits.csv
 type obj_file_exploits struct{
   id string
   file string
@@ -35,15 +36,30 @@ type obj_exploitdb_mapping struct{
   id [] string
 }
 
+type obj_cve struct{
+  cve string
+  attack_type string
+  score string
+  access_vector string
+  access_complexity string
+  authentication string
+  confidentiality_impact string
+  integrity_impact string
+	availability_impact string
+	description string
+	cpe_lst [] string
+}
+
 /*-------------------------------------------------------------------
 arrays
 --------------------------------------------------------------------*/
 var lstExploits [] obj_file_exploits
 var lstShells [] obj_file_exploits
 var lstCveId [] obj_exploitdb_mapping
+var lstCve[] obj_cve
 
 func main() {
-
+	start := time.Now()
 	downloadmanager.StartDownload()
 	//fmt.Println("Download Status: ", dl)
 
@@ -54,6 +70,10 @@ func main() {
   loadFileShells(lst_shells)
 
   loadExploitMapping()
+	loadCsvNvd()
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Println("Loading Time: ", elapsed)
 }
 
 /*-------------------------------------------------------------------
@@ -124,10 +144,47 @@ func loadExploitMapping(){
   fmt.Println("finished: exploitdb_mapping_cve.json")
 }
 
+func loadCsvNvd(){
+
+	years := downloadmanager.GetYears()
+	for y := range years {
+		fmt.Println("Loading: ", years[y])
+		if _, err := os.Stat("downloads/nvdcve_"+years[y]+".csv"); err == nil {
+		  // path/to/whatever exists
+			csvdata := readCsv("downloads/nvdcve_"+years[y]+".csv")
+
+			for d := range csvdata{
+				if d > 0{
+					lstdatasplit := strings.Split(csvdata[d][10],":::")
+					obj_cveitem := obj_cve{
+						cve: csvdata[d][0],
+				    attack_type: "",
+				    score: csvdata[d][2],
+				    access_vector: csvdata[d][3],
+				    access_complexity: csvdata[d][4],
+				    authentication: csvdata[d][5],
+				    confidentiality_impact: csvdata[d][6],
+				    integrity_impact: csvdata[d][7],
+				  	availability_impact: csvdata[d][8],
+				  	description: csvdata[d][9],
+				  	cpe_lst: lstdatasplit,
+				  }
+				  lstCve = append(lstCve,obj_cveitem)
+				}
+			}
+			fmt.Println("CVE's Loaded: ",len(lstCve))
+		} else if os.IsNotExist(err) {
+		  // path/to/whatever does *not* exist
+			fmt.Println("can't find nvd csv")
+		}
+	}
+
+}
 
 /*-------------------------------------------------------------------
 io
 --------------------------------------------------------------------*/
+
 func readCsv(file string) [][]string{
   var lstfile [][]string
   csvfile, err := os.Open(file)
@@ -142,6 +199,7 @@ func readCsv(file string) [][]string{
 			break
 		}
 		if err != nil {
+			fmt.Println("sad face")
 			log.Fatal(err)
 		}
 		//fmt.Printf("Question: %s Answer %s\n", record[0], record[1])
