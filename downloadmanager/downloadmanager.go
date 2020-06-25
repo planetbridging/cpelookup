@@ -20,8 +20,9 @@ var years [] string
 
 var lstfiles [] obj_Download
 
-func StartDownload(){
-  years := []string{
+
+func GetYears()[] string{
+	years := []string{
     "2002",
     "2003",
     "2004",
@@ -42,16 +43,17 @@ func StartDownload(){
     "2019",
     "2020",
   }
+	return years;
+}
+
+func StartDownload(){
+	GetYears()
   fmt.Println("Loading: " , years)
-	/*fileUrl := "https://golangcode.com/logo.svg"
-	err := DownloadFile("logo.svg", fileUrl)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Downloaded: " + fileUrl)*/
+
   addObj("exploitdb_mapping_cve.json","https://raw.githubusercontent.com/andreafioraldi/cve_searchsploit/master/cve_searchsploit/exploitdb_mapping_cve.json")
   addObj("files_shellcodes.csv","https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_shellcodes.csv")
   addObj("files_exploits.csv","https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv")
+
   for y := range years {
     addObj("nvdcve-1.1-"+years[y]+".json.zip", "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-"+years[y]+".json.zip")
   }
@@ -89,6 +91,7 @@ func addObj(fn string, loc string){
   }
   lstfiles = append(lstfiles,obj_dl)
 }
+
 func prepareFileDownload(obj_dl obj_Download){
   fileUrl := obj_dl.location
 	err := DownloadFile("downloads/" + obj_dl.name, fileUrl)
